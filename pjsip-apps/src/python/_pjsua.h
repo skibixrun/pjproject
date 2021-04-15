@@ -27,13 +27,13 @@
 #include <pjsua-lib/pjsua.h>
 
 
-PJ_INLINE(pj_str_t) PyString_ToPJ(const PyObject *obj)
+PJ_INLINE(pj_str_t) PyUnicode_ToPJ(const PyObject *obj)
 {
     pj_str_t str;
 
-    if (obj && PyString_Check(obj)) {
-	str.ptr = PyString_AS_STRING(obj);
-	str.slen = PyString_GET_SIZE(obj);
+    if (obj && PyUnicode_Check(obj)) {
+    str.ptr = PyUnicode_AsUTF8((PyObject *)obj);
+    str.slen = PyUnicode_GET_SIZE((PyObject *)obj);
     } else {
 	str.ptr = NULL;
 	str.slen = 0;
@@ -42,9 +42,9 @@ PJ_INLINE(pj_str_t) PyString_ToPJ(const PyObject *obj)
     return str;
 }
 
-PJ_INLINE(PyObject*) PyString_FromPJ(const pj_str_t *str)
+PJ_INLINE(PyObject*) PyUnicode_FromPJ(const pj_str_t *str)
 {
-    return PyString_FromStringAndSize(str->ptr, str->slen);
+    return PyUnicode_FromStringAndSize(str->ptr, str->slen);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -74,7 +74,7 @@ static void PyObj_pjsip_cred_info_delete(PyObj_pjsip_cred_info* self)
     Py_XDECREF(self->scheme);
     Py_XDECREF(self->username);
     Py_XDECREF(self->data);
-    self->ob_type->tp_free((PyObject*)self);
+    Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
 
@@ -82,24 +82,24 @@ static void PyObj_pjsip_cred_info_import(PyObj_pjsip_cred_info *obj,
 					 const pjsip_cred_info *cfg)
 {
     Py_XDECREF(obj->realm);
-    obj->realm = PyString_FromPJ(&cfg->realm);
+    obj->realm = PyUnicode_FromPJ(&cfg->realm);
     Py_XDECREF(obj->scheme);
-    obj->scheme = PyString_FromPJ(&cfg->scheme);
+    obj->scheme = PyUnicode_FromPJ(&cfg->scheme);
     Py_XDECREF(obj->username);
-    obj->username = PyString_FromPJ(&cfg->username);
+    obj->username = PyUnicode_FromPJ(&cfg->username);
     obj->data_type = cfg->data_type;
     Py_XDECREF(obj->data);
-    obj->data = PyString_FromPJ(&cfg->data);
+    obj->data = PyUnicode_FromPJ(&cfg->data);
 }
 
 static void PyObj_pjsip_cred_info_export(pjsip_cred_info *cfg,
 					 PyObj_pjsip_cred_info *obj)
 {
-    cfg->realm	= PyString_ToPJ(obj->realm);
-    cfg->scheme	= PyString_ToPJ(obj->scheme);
-    cfg->username = PyString_ToPJ(obj->username);
+    cfg->realm	= PyUnicode_ToPJ(obj->realm);
+    cfg->scheme	= PyUnicode_ToPJ(obj->scheme);
+    cfg->username = PyUnicode_ToPJ(obj->username);
     cfg->data_type = obj->data_type;
-    cfg->data	= PyString_ToPJ(obj->data);
+    cfg->data	= PyUnicode_ToPJ(obj->data);
 }
 
 
@@ -118,11 +118,11 @@ static PyObject * PyObj_pjsip_cred_info_new(PyTypeObject *type,
 
     self = (PyObj_pjsip_cred_info *)type->tp_alloc(type, 0);
     if (self != NULL) {
-        self->realm = PyString_FromString("");
-        self->scheme = PyString_FromString("");
-        self->username = PyString_FromString("");
+        self->realm = PyBytes_FromString("");
+        self->scheme = PyBytes_FromString("");
+        self->username = PyBytes_FromString("");
 	self->data_type = PJSIP_CRED_DATA_PLAIN_PASSWD;
-        self->data = PyString_FromString("");
+        self->data = PyBytes_FromString("");
     }
 
     return (PyObject *)self;
@@ -170,11 +170,10 @@ static PyMemberDef PyObj_pjsip_cred_info_members[] =
 static PyTypeObject PyTyp_pjsip_cred_info =
 {
     PyObject_HEAD_INIT(NULL)
-    0,                              /*ob_size*/
     "_pjsua.Pjsip_Cred_Info",      /*tp_name*/
     sizeof(PyObj_pjsip_cred_info),  /*tp_basicsize*/
     0,                              /*tp_itemsize*/
-    (destructor)PyObj_pjsip_cred_info_delete,/*tp_dealloc*/
+    (destructor) PyObj_pjsip_cred_info_delete,/*tp_dealloc*/
     0,                              /*tp_print*/
     0,                              /*tp_getattr*/
     0,                              /*tp_setattr*/
@@ -260,7 +259,7 @@ static void PyObj_pjsua_callback_delete(PyObj_pjsua_callback* self)
     Py_XDECREF(self->on_pager_status);
     Py_XDECREF(self->on_typing);
     Py_XDECREF(self->on_mwi_info);
-    self->ob_type->tp_free((PyObject*)self);
+    Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
 
@@ -413,7 +412,6 @@ static PyMemberDef PyObj_pjsua_callback_members[] =
 static PyTypeObject PyTyp_pjsua_callback =
 {
     PyObject_HEAD_INIT(NULL)
-    0,					/*ob_size*/
     "_pjsua.Callback",		/*tp_name*/
     sizeof(PyObj_pjsua_callback),	/*tp_basicsize*/
     0,					/*tp_itemsize*/
@@ -659,10 +657,10 @@ static PyObject *PyObj_pjsua_media_config_new(PyTypeObject *type,
 
     self = (PyObj_pjsua_media_config*)type->tp_alloc(type, 0);
     if (self != NULL) {
-	self->turn_server = PyString_FromString("");
-	self->turn_realm = PyString_FromString("");
-	self->turn_username = PyString_FromString("");
-	self->turn_passwd = PyString_FromString("");
+	self->turn_server = PyBytes_FromString("");
+	self->turn_realm = PyBytes_FromString("");
+	self->turn_username = PyBytes_FromString("");
+	self->turn_passwd = PyBytes_FromString("");
     }
 
     return (PyObject *)self;
@@ -674,7 +672,7 @@ static void PyObj_pjsua_media_config_delete(PyObj_pjsua_media_config * self)
     Py_XDECREF(self->turn_realm);
     Py_XDECREF(self->turn_username);
     Py_XDECREF(self->turn_passwd);
-    self->ob_type->tp_free((PyObject*)self);
+    Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
 static void PyObj_pjsua_media_config_import(PyObj_pjsua_media_config *obj,
@@ -701,26 +699,26 @@ static void PyObj_pjsua_media_config_import(PyObj_pjsua_media_config *obj,
     obj->enable_ice	    = cfg->enable_ice;
     obj->enable_turn	    = cfg->enable_turn;
     Py_XDECREF(obj->turn_server);
-    obj->turn_server	    = PyString_FromPJ(&cfg->turn_server);
+    obj->turn_server	    = PyUnicode_FromPJ(&cfg->turn_server);
     obj->turn_conn_type	    = cfg->turn_conn_type;
     if (cfg->turn_auth_cred.type == PJ_STUN_AUTH_CRED_STATIC) {
 	const pj_stun_auth_cred *cred = &cfg->turn_auth_cred;
 
 	Py_XDECREF(obj->turn_realm);
-	obj->turn_realm	= PyString_FromPJ(&cred->data.static_cred.realm);
+	obj->turn_realm	= PyUnicode_FromPJ(&cred->data.static_cred.realm);
 	Py_XDECREF(obj->turn_username);
-	obj->turn_username = PyString_FromPJ(&cred->data.static_cred.username);
+	obj->turn_username = PyUnicode_FromPJ(&cred->data.static_cred.username);
 	obj->turn_passwd_type = cred->data.static_cred.data_type;
 	Py_XDECREF(obj->turn_passwd);
-	obj->turn_passwd = PyString_FromPJ(&cred->data.static_cred.data);
+	obj->turn_passwd = PyUnicode_FromPJ(&cred->data.static_cred.data);
     } else {
 	Py_XDECREF(obj->turn_realm);
-	obj->turn_realm	= PyString_FromString("");
+	obj->turn_realm	= PyBytes_FromString("");
 	Py_XDECREF(obj->turn_username);
-	obj->turn_username = PyString_FromString("");
+	obj->turn_username = PyBytes_FromString("");
 	obj->turn_passwd_type = 0;
 	Py_XDECREF(obj->turn_passwd);
-	obj->turn_passwd = PyString_FromString("");
+	obj->turn_passwd = PyBytes_FromString("");
     }
 }
 
@@ -749,13 +747,13 @@ static void PyObj_pjsua_media_config_export(pjsua_media_config *cfg,
     cfg->enable_turn	    = obj->enable_turn;
 
     if (cfg->enable_turn) {
-	cfg->turn_server = PyString_ToPJ(obj->turn_server);
+	cfg->turn_server = PyUnicode_ToPJ(obj->turn_server);
 	cfg->turn_conn_type = obj->turn_conn_type;
 	cfg->turn_auth_cred.type = PJ_STUN_AUTH_CRED_STATIC;
-	cfg->turn_auth_cred.data.static_cred.realm = PyString_ToPJ(obj->turn_realm);
-	cfg->turn_auth_cred.data.static_cred.username = PyString_ToPJ(obj->turn_username);
+	cfg->turn_auth_cred.data.static_cred.realm = PyUnicode_ToPJ(obj->turn_realm);
+	cfg->turn_auth_cred.data.static_cred.username = PyUnicode_ToPJ(obj->turn_username);
 	cfg->turn_auth_cred.data.static_cred.data_type= obj->turn_passwd_type;
-	cfg->turn_auth_cred.data.static_cred.data = PyString_ToPJ(obj->turn_passwd);
+	cfg->turn_auth_cred.data.static_cred.data = PyUnicode_ToPJ(obj->turn_passwd);
     }
 }
 
@@ -766,7 +764,6 @@ static void PyObj_pjsua_media_config_export(pjsua_media_config *cfg,
 static PyTypeObject PyTyp_pjsua_media_config =
 {
     PyObject_HEAD_INIT(NULL)
-    0,                              /*ob_size*/
     "_pjsua.Media_Config",        /*tp_name*/
     sizeof(PyObj_pjsua_media_config),/*tp_basicsize*/
     0,                              /*tp_itemsize*/
@@ -835,7 +832,7 @@ static void PyObj_pjsua_config_delete(PyObj_pjsua_config* self)
     Py_XDECREF(self->nameserver);
     Py_XDECREF(self->cb);
     Py_XDECREF(self->user_agent);
-    self->ob_type->tp_free((PyObject*)self);
+    Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
 
@@ -848,23 +845,23 @@ static void PyObj_pjsua_config_import(PyObj_pjsua_config *obj,
     obj->thread_cnt	= cfg->thread_cnt;
     Py_XDECREF(obj->outbound_proxy);
     if (cfg->outbound_proxy_cnt)
-	obj->outbound_proxy = PyString_FromPJ(&cfg->outbound_proxy[0]);
+	obj->outbound_proxy = PyUnicode_FromPJ(&cfg->outbound_proxy[0]);
     else
-	obj->outbound_proxy = PyString_FromString("");
+	obj->outbound_proxy = PyBytes_FromString("");
 
     Py_XDECREF(obj->stun_domain);
-    obj->stun_domain	= PyString_FromPJ(&cfg->stun_domain);
+    obj->stun_domain	= PyUnicode_FromPJ(&cfg->stun_domain);
     Py_XDECREF(obj->stun_host);
-    obj->stun_host	= PyString_FromPJ(&cfg->stun_host);
+    obj->stun_host	= PyUnicode_FromPJ(&cfg->stun_host);
     Py_XDECREF(obj->nameserver);
     obj->nameserver = (PyListObject *)PyList_New(0);
     for (i=0; i<cfg->nameserver_count; ++i) {
 	PyObject * str;
-	str = PyString_FromPJ(&cfg->nameserver[i]);
+	str = PyUnicode_FromPJ(&cfg->nameserver[i]);
 	PyList_Append((PyObject *)obj->nameserver, str);
     }
     Py_XDECREF(obj->user_agent);
-    obj->user_agent	= PyString_FromPJ(&cfg->user_agent);
+    obj->user_agent	= PyUnicode_FromPJ(&cfg->user_agent);
 }
 
 
@@ -875,9 +872,9 @@ static void PyObj_pjsua_config_export(pjsua_config *cfg,
 
     cfg->max_calls	= obj->max_calls;
     cfg->thread_cnt	= obj->thread_cnt;
-    if (PyString_Size(obj->outbound_proxy) > 0) {
+    if (PyBytes_Size(obj->outbound_proxy) > 0) {
 	cfg->outbound_proxy_cnt = 1;
-	cfg->outbound_proxy[0] = PyString_ToPJ(obj->outbound_proxy);
+	cfg->outbound_proxy[0] = PyUnicode_ToPJ(obj->outbound_proxy);
     } else {
 	cfg->outbound_proxy_cnt = 0;
     }
@@ -886,11 +883,11 @@ static void PyObj_pjsua_config_export(pjsua_config *cfg,
 	cfg->nameserver_count = PJ_ARRAY_SIZE(cfg->nameserver);
     for (i = 0; i < cfg->nameserver_count; i++) {
 	PyObject *item = PyList_GetItem((PyObject *)obj->nameserver,i);
-        cfg->nameserver[i] = PyString_ToPJ(item);
+        cfg->nameserver[i] = PyUnicode_ToPJ(item);
     }
-    cfg->stun_domain	= PyString_ToPJ(obj->stun_domain);
-    cfg->stun_host	= PyString_ToPJ(obj->stun_host);
-    cfg->user_agent	= PyString_ToPJ(obj->user_agent);
+    cfg->stun_domain	= PyUnicode_ToPJ(obj->stun_domain);
+    cfg->stun_host	= PyUnicode_ToPJ(obj->stun_host);
+    cfg->user_agent	= PyUnicode_ToPJ(obj->user_agent);
 
 }
 
@@ -906,10 +903,10 @@ static PyObject *PyObj_pjsua_config_new(PyTypeObject *type,
 
     self = (PyObj_pjsua_config *)type->tp_alloc(type, 0);
     if (self != NULL) {
-        self->user_agent = PyString_FromString("");
-        self->outbound_proxy = PyString_FromString("");
-	self->stun_domain = PyString_FromString("");
-	self->stun_host = PyString_FromString("");
+        self->user_agent = PyBytes_FromString("");
+        self->outbound_proxy = PyBytes_FromString("");
+	self->stun_domain = PyBytes_FromString("");
+	self->stun_host = PyBytes_FromString("");
         self->cb = (PyObj_pjsua_callback *)
 		   PyType_GenericNew(&PyTyp_pjsua_callback, NULL, NULL);
     }
@@ -979,7 +976,6 @@ static PyMemberDef PyObj_pjsua_config_members[] =
 static PyTypeObject PyTyp_pjsua_config =
 {
     PyObject_HEAD_INIT(NULL)
-    0,                         /*ob_size*/
     "_pjsua.Config",         /*tp_name*/
     sizeof(PyObj_pjsua_config),/*tp_basicsize*/
     0,                         /*tp_itemsize*/
@@ -1046,7 +1042,7 @@ static void PyObj_pjsua_logging_config_delete(PyObj_pjsua_logging_config* self)
 {
     Py_XDECREF(self->log_filename);
     Py_XDECREF(self->cb);
-    self->ob_type->tp_free((PyObject*)self);
+    Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
 
@@ -1058,7 +1054,7 @@ static void PyObj_pjsua_logging_config_import(PyObj_pjsua_logging_config *obj,
     obj->console_level	= cfg->console_level;
     obj->decor		= cfg->decor;
     Py_XDECREF(obj->log_filename);
-    obj->log_filename = PyString_FromPJ(&cfg->log_filename);
+    obj->log_filename = PyUnicode_FromPJ(&cfg->log_filename);
 }
 
 static void PyObj_pjsua_logging_config_export(pjsua_logging_config *cfg,
@@ -1068,7 +1064,7 @@ static void PyObj_pjsua_logging_config_export(pjsua_logging_config *cfg,
     cfg->level		= obj->level;
     cfg->console_level	= obj->console_level;
     cfg->decor		= obj->decor;
-    cfg->log_filename	= PyString_ToPJ(obj->log_filename);
+    cfg->log_filename	= PyUnicode_ToPJ(obj->log_filename);
 }
 
 
@@ -1087,7 +1083,7 @@ static PyObject * PyObj_pjsua_logging_config_new(PyTypeObject *type,
 
     self = (PyObj_pjsua_logging_config *)type->tp_alloc(type, 0);
     if (self != NULL) {
-        self->log_filename = PyString_FromString("");
+        self->log_filename = PyBytes_FromString("");
         self->cb = Py_BuildValue("");
     }
 
@@ -1144,7 +1140,6 @@ static PyMemberDef PyObj_pjsua_logging_config_members[] =
 static PyTypeObject PyTyp_pjsua_logging_config =
 {
     PyObject_HEAD_INIT(NULL)
-    0,                              /*ob_size*/
     "_pjsua.Logging_Config",      /*tp_name*/
     sizeof(PyObj_pjsua_logging_config),  /*tp_basicsize*/
     0,                              /*tp_itemsize*/
@@ -1212,7 +1207,7 @@ static void PyObj_pjsua_msg_data_delete(PyObj_pjsua_msg_data* self)
     Py_XDECREF(self->hdr_list);
     Py_XDECREF(self->content_type);
     Py_XDECREF(self->msg_body);
-    self->ob_type->tp_free((PyObject*)self);
+    Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
 
@@ -1233,8 +1228,8 @@ static PyObject * PyObj_pjsua_msg_data_new(PyTypeObject *type,
     self = (PyObj_pjsua_msg_data *)type->tp_alloc(type, 0);
     if (self != NULL) {
         self->hdr_list = PyList_New(0);
-        self->content_type = PyString_FromString("");
-        self->msg_body = PyString_FromString("");
+        self->content_type = PyBytes_FromString("");
+        self->msg_body = PyBytes_FromString("");
     }
 
     return (PyObject *)self;
@@ -1272,7 +1267,6 @@ static PyMemberDef PyObj_pjsua_msg_data_members[] =
 static PyTypeObject PyTyp_pjsua_msg_data =
 {
     PyObject_HEAD_INIT(NULL)
-    0,                         /*ob_size*/
     "_pjsua.Msg_Data",       /*tp_name*/
     sizeof(PyObj_pjsua_msg_data),   /*tp_basicsize*/
     0,                         /*tp_itemsize*/
@@ -1344,7 +1338,7 @@ static void PyObj_pjsua_transport_config_delete(PyObj_pjsua_transport_config* se
 {
     Py_XDECREF(self->public_addr);    
     Py_XDECREF(self->bound_addr);
-    self->ob_type->tp_free((PyObject*)self);
+    Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
 
@@ -1352,8 +1346,8 @@ static void PyObj_pjsua_transport_config_export(pjsua_transport_config *cfg,
 						PyObj_pjsua_transport_config *obj)
 {
     pjsua_transport_config_default(cfg);
-    cfg->public_addr	= PyString_ToPJ(obj->public_addr);
-    cfg->bound_addr	= PyString_ToPJ(obj->bound_addr);
+    cfg->public_addr	= PyUnicode_ToPJ(obj->public_addr);
+    cfg->bound_addr	= PyUnicode_ToPJ(obj->bound_addr);
     cfg->port		= obj->port;
     cfg->qos_type	= obj->qos_type;
     cfg->qos_params.flags	= obj->qos_params_flags;
@@ -1366,10 +1360,10 @@ static void PyObj_pjsua_transport_config_import(PyObj_pjsua_transport_config *ob
 						const pjsua_transport_config *cfg)
 {
     Py_XDECREF(obj->public_addr);    
-    obj->public_addr = PyString_FromPJ(&cfg->public_addr);
+    obj->public_addr = PyUnicode_FromPJ(&cfg->public_addr);
 
     Py_XDECREF(obj->bound_addr);    
-    obj->bound_addr = PyString_FromPJ(&cfg->bound_addr);
+    obj->bound_addr = PyUnicode_FromPJ(&cfg->bound_addr);
 
     obj->port		= cfg->port;
     obj->qos_type	= cfg->qos_type;
@@ -1396,8 +1390,8 @@ static PyObject * PyObj_pjsua_transport_config_new(PyTypeObject *type,
 
     self = (PyObj_pjsua_transport_config *)type->tp_alloc(type, 0);
     if (self != NULL) {
-        self->public_addr = PyString_FromString("");
-        self->bound_addr = PyString_FromString("");
+        self->public_addr = PyBytes_FromString("");
+        self->bound_addr = PyBytes_FromString("");
     }
 
     return (PyObject *)self;
@@ -1499,7 +1493,6 @@ static PyMemberDef PyObj_pjsua_transport_config_members[] =
 static PyTypeObject PyTyp_pjsua_transport_config =
 {
     PyObject_HEAD_INIT(NULL)
-    0,                              /*ob_size*/
     "_pjsua.Transport_Config",    /*tp_name*/
     sizeof(PyObj_pjsua_transport_config),  /*tp_basicsize*/
     0,                              /*tp_itemsize*/
@@ -1569,7 +1562,7 @@ static void PyObj_pjsua_transport_info_delete(PyObj_pjsua_transport_info* self)
     Py_XDECREF(self->type_name); 
     Py_XDECREF(self->info);
     Py_XDECREF(self->addr);
-    self->ob_type->tp_free((PyObject*)self);
+    Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
 
@@ -1578,10 +1571,10 @@ static void PyObj_pjsua_transport_info_import(PyObj_pjsua_transport_info *obj,
 {
     obj->id	    = info->id;
     obj->type	    = info->type;
-    obj->type_name  = PyString_FromPJ(&info->type_name);
-    obj->info	    = PyString_FromPJ(&info->info);
+    obj->type_name  = PyUnicode_FromPJ(&info->type_name);
+    obj->info	    = PyUnicode_FromPJ(&info->info);
     obj->flag	    = info->flag;
-    obj->addr	    = PyString_FromPJ(&info->local_name.host);
+    obj->addr	    = PyUnicode_FromPJ(&info->local_name.host);
     obj->port	    = info->local_name.port;
     obj->usage_count= info->usage_count;
 }
@@ -1602,9 +1595,9 @@ static PyObject * PyObj_pjsua_transport_info_new(PyTypeObject *type,
     self = (PyObj_pjsua_transport_info *)type->tp_alloc(type, 0);
     if (self != NULL)
     {
-        self->type_name = PyString_FromString("");
-        self->info = PyString_FromString(""); 
-        self->addr = PyString_FromString("");
+        self->type_name = PyBytes_FromString("");
+        self->info = PyBytes_FromString(""); 
+        self->addr = PyBytes_FromString("");
     }
 
     return (PyObject *)self;
@@ -1666,7 +1659,6 @@ static PyMemberDef PyObj_pjsua_transport_info_members[] =
 static PyTypeObject PyTyp_pjsua_transport_info =
 {
     PyObject_HEAD_INIT(NULL)
-    0,                              /*ob_size*/
     "_pjsua.Transport_Info",      /*tp_name*/
     sizeof(PyObj_pjsua_transport_info),  /*tp_basicsize*/
     0,                              /*tp_itemsize*/
@@ -1764,7 +1756,7 @@ static void PyObj_pjsua_acc_config_delete(PyObj_pjsua_acc_config* self)
     Py_XDECREF(self->contact_uri_params);
     Py_XDECREF(self->ka_data);
     Py_XDECREF(self->rtp_transport_cfg);
-    self->ob_type->tp_free((PyObject*)self);
+    Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
 
@@ -1776,18 +1768,18 @@ static void PyObj_pjsua_acc_config_import(PyObj_pjsua_acc_config *obj,
 
     obj->priority   = cfg->priority;
     Py_XDECREF(obj->id);
-    obj->id	    = PyString_FromPJ(&cfg->id);
+    obj->id	    = PyUnicode_FromPJ(&cfg->id);
     Py_XDECREF(obj->reg_uri);
-    obj->reg_uri    = PyString_FromPJ(&cfg->reg_uri);
+    obj->reg_uri    = PyUnicode_FromPJ(&cfg->reg_uri);
     obj->publish_enabled = cfg->publish_enabled;
     obj->mwi_enabled = cfg->mwi_enabled;
     Py_XDECREF(obj->force_contact);
-    obj->force_contact = PyString_FromPJ(&cfg->force_contact);
+    obj->force_contact = PyUnicode_FromPJ(&cfg->force_contact);
     Py_XDECREF(obj->proxy);
     obj->proxy = (PyListObject *)PyList_New(0);
     for (i=0; i<cfg->proxy_cnt; ++i) {
 	PyObject * str;
-	str = PyString_FromPJ(&cfg->proxy[i]);
+	str = PyUnicode_FromPJ(&cfg->proxy[i]);
 	PyList_Append((PyObject *)obj->proxy, str);
     }
 
@@ -1809,13 +1801,13 @@ static void PyObj_pjsua_acc_config_import(PyObj_pjsua_acc_config *obj,
 
     obj->auth_initial_send = cfg->auth_pref.initial_auth;
     Py_XDECREF(obj->auth_initial_algorithm);
-    obj->auth_initial_algorithm = PyString_FromPJ(&cfg->auth_pref.algorithm);
+    obj->auth_initial_algorithm = PyUnicode_FromPJ(&cfg->auth_pref.algorithm);
     Py_XDECREF(obj->pidf_tuple_id);
-    obj->pidf_tuple_id = PyString_FromPJ(&cfg->pidf_tuple_id);
+    obj->pidf_tuple_id = PyUnicode_FromPJ(&cfg->pidf_tuple_id);
     Py_XDECREF(obj->contact_params);
-    obj->contact_params = PyString_FromPJ(&cfg->contact_params);
+    obj->contact_params = PyUnicode_FromPJ(&cfg->contact_params);
     Py_XDECREF(obj->contact_uri_params);
-    obj->contact_uri_params = PyString_FromPJ(&cfg->contact_uri_params);
+    obj->contact_uri_params = PyUnicode_FromPJ(&cfg->contact_uri_params);
     obj->require_100rel = cfg->require_100rel;
     obj->use_timer = cfg->use_timer;
     obj->timer_se = cfg->timer_setting.sess_expires;
@@ -1823,7 +1815,7 @@ static void PyObj_pjsua_acc_config_import(PyObj_pjsua_acc_config *obj,
     obj->allow_contact_rewrite = cfg->allow_contact_rewrite;
     obj->ka_interval = cfg->ka_interval;
     Py_XDECREF(obj->ka_data);
-    obj->ka_data = PyString_FromPJ(&cfg->ka_data);
+    obj->ka_data = PyUnicode_FromPJ(&cfg->ka_data);
     obj->use_srtp = cfg->use_srtp;
     obj->srtp_secure_signaling = cfg->srtp_secure_signaling;
 
@@ -1842,18 +1834,18 @@ static void PyObj_pjsua_acc_config_export(pjsua_acc_config *cfg,
     unsigned i;
 
     cfg->priority   = obj->priority;
-    cfg->id	    = PyString_ToPJ(obj->id);
-    cfg->reg_uri    = PyString_ToPJ(obj->reg_uri);
+    cfg->id	    = PyUnicode_ToPJ(obj->id);
+    cfg->reg_uri    = PyUnicode_ToPJ(obj->reg_uri);
     cfg->publish_enabled = obj->publish_enabled;
     cfg->mwi_enabled = obj->mwi_enabled;
-    cfg->force_contact = PyString_ToPJ(obj->force_contact);
+    cfg->force_contact = PyUnicode_ToPJ(obj->force_contact);
 
     cfg->proxy_cnt = PyList_Size((PyObject*)obj->proxy);
     if (cfg->proxy_cnt > PJ_ARRAY_SIZE(cfg->proxy))
 	cfg->proxy_cnt = PJ_ARRAY_SIZE(cfg->proxy);
     for (i = 0; i < cfg->proxy_cnt; i++) {
 	PyObject *item = PyList_GetItem((PyObject *)obj->proxy, i);
-        cfg->proxy[i] = PyString_ToPJ(item);
+        cfg->proxy[i] = PyUnicode_ToPJ(item);
     }
 
     cfg->reg_timeout = obj->reg_timeout;
@@ -1871,17 +1863,17 @@ static void PyObj_pjsua_acc_config_export(pjsua_acc_config *cfg,
 
     cfg->transport_id = obj->transport_id;
     cfg->auth_pref.initial_auth = obj->auth_initial_send;
-    cfg->auth_pref.algorithm = PyString_ToPJ(obj->auth_initial_algorithm);
-    cfg->pidf_tuple_id = PyString_ToPJ(obj->pidf_tuple_id);
-    cfg->contact_params = PyString_ToPJ(obj->contact_params);
-    cfg->contact_uri_params = PyString_ToPJ(obj->contact_uri_params);
+    cfg->auth_pref.algorithm = PyUnicode_ToPJ(obj->auth_initial_algorithm);
+    cfg->pidf_tuple_id = PyUnicode_ToPJ(obj->pidf_tuple_id);
+    cfg->contact_params = PyUnicode_ToPJ(obj->contact_params);
+    cfg->contact_uri_params = PyUnicode_ToPJ(obj->contact_uri_params);
     cfg->require_100rel = obj->require_100rel;
     cfg->use_timer = obj->use_timer;
     cfg->timer_setting.sess_expires = obj->timer_se;
     cfg->timer_setting.min_se = obj->timer_min_se;
     cfg->allow_contact_rewrite = obj->allow_contact_rewrite;
     cfg->ka_interval = obj->ka_interval;
-    cfg->ka_data = PyString_ToPJ(obj->ka_data);
+    cfg->ka_data = PyUnicode_ToPJ(obj->ka_data);
     cfg->use_srtp = obj->use_srtp;
     cfg->srtp_secure_signaling = obj->srtp_secure_signaling;
 
@@ -1905,16 +1897,16 @@ static PyObject * PyObj_pjsua_acc_config_new(PyTypeObject *type,
 
     self = (PyObj_pjsua_acc_config *)type->tp_alloc(type, 0);
     if (self != NULL) {
-        self->id = PyString_FromString("");
-        self->reg_uri = PyString_FromString("");
-        self->force_contact = PyString_FromString("");
+        self->id = PyBytes_FromString("");
+        self->reg_uri = PyBytes_FromString("");
+        self->force_contact = PyBytes_FromString("");
 	self->proxy = (PyListObject *)PyList_New(0);
 	self->cred_info = (PyListObject *)PyList_New(0);
-	self->auth_initial_algorithm = PyString_FromString("");
-	self->pidf_tuple_id = PyString_FromString("");
-	self->contact_params = PyString_FromString("");
-	self->contact_uri_params = PyString_FromString("");
-	self->ka_data = PyString_FromString("");
+	self->auth_initial_algorithm = PyBytes_FromString("");
+	self->pidf_tuple_id = PyBytes_FromString("");
+	self->contact_params = PyBytes_FromString("");
+	self->contact_uri_params = PyBytes_FromString("");
+	self->ka_data = PyBytes_FromString("");
     }
 
     return (PyObject *)self;
@@ -2097,7 +2089,6 @@ static PyMemberDef PyObj_pjsua_acc_config_members[] =
 static PyTypeObject PyTyp_pjsua_acc_config =
 {
     PyObject_HEAD_INIT(NULL)
-    0,                              /*ob_size*/
     "_pjsua.Acc_Config",	    /*tp_name*/
     sizeof(PyObj_pjsua_acc_config), /*tp_basicsize*/
     0,                              /*tp_itemsize*/
@@ -2169,7 +2160,7 @@ static void PyObj_pjsua_acc_info_delete(PyObj_pjsua_acc_info* self)
     Py_XDECREF(self->acc_uri);
     Py_XDECREF(self->status_text);
     Py_XDECREF(self->online_status_text);
-    self->ob_type->tp_free((PyObject*)self);
+    Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
 
@@ -2179,15 +2170,15 @@ static void PyObj_pjsua_acc_info_import(PyObj_pjsua_acc_info *obj,
     obj->id	    = info->id;
     obj->is_default = info->is_default;
     Py_XDECREF(obj->acc_uri);
-    obj->acc_uri    = PyString_FromPJ(&info->acc_uri);
+    obj->acc_uri    = PyUnicode_FromPJ(&info->acc_uri);
     obj->has_registration = info->has_registration;
     obj->expires    = info->expires;
     obj->status	    = info->status;
     Py_XDECREF(obj->status_text);
-    obj->status_text= PyString_FromPJ(&info->status_text);
+    obj->status_text= PyUnicode_FromPJ(&info->status_text);
     obj->online_status = info->online_status;
     Py_XDECREF(obj->online_status_text);
-    obj->online_status_text = PyString_FromPJ(&info->online_status_text);
+    obj->online_status_text = PyUnicode_FromPJ(&info->online_status_text);
 }
 
 
@@ -2206,9 +2197,9 @@ static PyObject * PyObj_pjsua_acc_info_new(PyTypeObject *type,
 
     self = (PyObj_pjsua_acc_info *)type->tp_alloc(type, 0);
     if (self != NULL) {
-        self->acc_uri = PyString_FromString("");
-	self->status_text = PyString_FromString("");
-	self->online_status_text = PyString_FromString("");
+        self->acc_uri = PyBytes_FromString("");
+	self->status_text = PyBytes_FromString("");
+	self->online_status_text = PyBytes_FromString("");
     }
 
     return (PyObject *)self;
@@ -2279,7 +2270,6 @@ static PyMemberDef acc_info_members[] =
 static PyTypeObject PyTyp_pjsua_acc_info =
 {
     PyObject_HEAD_INIT(NULL)
-    0,                              /*ob_size*/
     "_pjsua.Acc_Info",		    /*tp_name*/
     sizeof(PyObj_pjsua_acc_info),   /*tp_basicsize*/
     0,                              /*tp_itemsize*/
@@ -2343,7 +2333,7 @@ typedef struct
 static void PyObj_pjsua_buddy_config_delete(PyObj_pjsua_buddy_config* self)
 {
     Py_XDECREF(self->uri);
-    self->ob_type->tp_free((PyObject*)self);
+    Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
 
@@ -2351,7 +2341,7 @@ static void PyObj_pjsua_buddy_config_import(PyObj_pjsua_buddy_config *obj,
 					    const pjsua_buddy_config *cfg)
 {
     Py_XDECREF(obj->uri);
-    obj->uri = PyString_FromPJ(&cfg->uri);
+    obj->uri = PyUnicode_FromPJ(&cfg->uri);
     obj->subscribe = cfg->subscribe;
 }
 
@@ -2359,7 +2349,7 @@ static void PyObj_pjsua_buddy_config_import(PyObj_pjsua_buddy_config *obj,
 static void PyObj_pjsua_buddy_config_export(pjsua_buddy_config *cfg,
 					    PyObj_pjsua_buddy_config *obj)
 {
-    cfg->uri = PyString_ToPJ(obj->uri);
+    cfg->uri = PyUnicode_ToPJ(obj->uri);
     cfg->subscribe = obj->subscribe;
     cfg->user_data = NULL;
 }
@@ -2380,7 +2370,7 @@ static PyObject *PyObj_pjsua_buddy_config_new(PyTypeObject *type,
 
     self = (PyObj_pjsua_buddy_config *)type->tp_alloc(type, 0);
     if (self != NULL) {
-        self->uri = PyString_FromString("");
+        self->uri = PyBytes_FromString("");
     }
     return (PyObject *)self;
 }
@@ -2415,7 +2405,6 @@ static PyMemberDef PyObj_pjsua_buddy_config_members[] =
 static PyTypeObject PyTyp_pjsua_buddy_config =
 {
     PyObject_HEAD_INIT(NULL)
-    0,                              /*ob_size*/
     "_pjsua.Buddy_Config",        /*tp_name*/
     sizeof(PyObj_pjsua_buddy_config),/*tp_basicsize*/
     0,                              /*tp_itemsize*/
@@ -2489,7 +2478,7 @@ static void PyObj_pjsua_buddy_info_delete(PyObj_pjsua_buddy_info* self)
     Py_XDECREF(self->status_text);
     Py_XDECREF(self->sub_term_reason);
     
-    self->ob_type->tp_free((PyObject*)self);
+    Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
 
@@ -2498,17 +2487,17 @@ static void PyObj_pjsua_buddy_info_import(PyObj_pjsua_buddy_info *obj,
 {
     obj->id = info->id;
     Py_XDECREF(obj->uri);
-    obj->uri = PyString_FromPJ(&info->uri);
+    obj->uri = PyUnicode_FromPJ(&info->uri);
     Py_XDECREF(obj->contact);
-    obj->contact = PyString_FromPJ(&info->contact);
+    obj->contact = PyUnicode_FromPJ(&info->contact);
     obj->status = info->status;
     Py_XDECREF(obj->status_text);
-    obj->status_text = PyString_FromPJ(&info->status_text);
+    obj->status_text = PyUnicode_FromPJ(&info->status_text);
     obj->monitor_pres = info->monitor_pres;
     obj->activity = info->rpid.activity;
     obj->sub_state = info->sub_state;
     Py_XDECREF(obj->sub_term_reason);
-    obj->sub_term_reason = PyString_FromPJ(&info->sub_term_reason);
+    obj->sub_term_reason = PyUnicode_FromPJ(&info->sub_term_reason);
 }
 
 
@@ -2528,10 +2517,10 @@ static PyObject * PyObj_pjsua_buddy_info_new(PyTypeObject *type,
 
     self = (PyObj_pjsua_buddy_info *)type->tp_alloc(type, 0);
     if (self != NULL) {
-        self->uri = PyString_FromString("");
-	self->contact = PyString_FromString("");
-	self->status_text = PyString_FromString("");
-	self->sub_term_reason = PyString_FromString("");
+        self->uri = PyBytes_FromString("");
+	self->contact = PyBytes_FromString("");
+	self->status_text = PyBytes_FromString("");
+	self->sub_term_reason = PyBytes_FromString("");
     }
     return (PyObject *)self;
 }
@@ -2603,7 +2592,6 @@ static PyMemberDef PyObj_pjsua_buddy_info_members[] =
 static PyTypeObject PyTyp_pjsua_buddy_info =
 {
     PyObject_HEAD_INIT(NULL)
-    0,                              /*ob_size*/
     "_pjsua.Buddy_Info",	    /*tp_name*/
     sizeof(PyObj_pjsua_buddy_info), /*tp_basicsize*/
     0,                              /*tp_itemsize*/
@@ -2668,7 +2656,7 @@ typedef struct
 static void codec_info_dealloc(PyObj_pjsua_codec_info* self)
 {
     Py_XDECREF(self->codec_id);    
-    self->ob_type->tp_free((PyObject*)self);
+    Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
 
@@ -2686,7 +2674,7 @@ static PyObject * codec_info_new(PyTypeObject *type, PyObject *args,
 
     self = (PyObj_pjsua_codec_info *)type->tp_alloc(type, 0);
     if (self != NULL) {
-        self->codec_id = PyString_FromString("");
+        self->codec_id = PyBytes_FromString("");
     }
     return (PyObject *)self;
 }
@@ -2717,7 +2705,6 @@ static PyMemberDef codec_info_members[] =
 static PyTypeObject PyTyp_pjsua_codec_info =
 {
     PyObject_HEAD_INIT(NULL)
-    0,                              /*ob_size*/
     "_pjsua.Codec_Info",	    /*tp_name*/
     sizeof(PyObj_pjsua_codec_info), /*tp_basicsize*/
     0,                              /*tp_itemsize*/
@@ -2789,7 +2776,7 @@ static void conf_port_info_dealloc(PyObj_pjsua_conf_port_info* self)
 {
     Py_XDECREF(self->name);    
     Py_XDECREF(self->listeners);
-    self->ob_type->tp_free((PyObject*)self);
+    Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
 
@@ -2807,7 +2794,7 @@ static PyObject * conf_port_info_new(PyTypeObject *type, PyObject *args,
 
     self = (PyObj_pjsua_conf_port_info *)type->tp_alloc(type, 0);
     if (self != NULL) {
-        self->name = PyString_FromString("");
+        self->name = PyBytes_FromString("");
 	self->listeners = PyList_New(0);
     }
     return (PyObject *)self;
@@ -2867,7 +2854,6 @@ static PyMemberDef conf_port_info_members[] =
 static PyTypeObject PyTyp_pjsua_conf_port_info =
 {
     PyObject_HEAD_INIT(NULL)
-    0,                              /*ob_size*/
     "_pjsua.Conf_Port_Info",	    /*tp_name*/
     sizeof(PyObj_pjsua_conf_port_info),  /*tp_basicsize*/
     0,                              /*tp_itemsize*/
@@ -2933,7 +2919,7 @@ typedef struct
 static void pjmedia_snd_dev_info_dealloc(PyObj_pjmedia_snd_dev_info* self)
 {
     Py_XDECREF(self->name);        
-    self->ob_type->tp_free((PyObject*)self);
+    Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
 /*
@@ -2951,7 +2937,7 @@ static PyObject * pjmedia_snd_dev_info_new(PyTypeObject *type,
 
     self = (PyObj_pjmedia_snd_dev_info *)type->tp_alloc(type, 0);
     if (self != NULL) {
-        self->name = PyString_FromString("");	
+        self->name = PyBytes_FromString("");	
     }
     return (PyObject *)self;
 }
@@ -2992,7 +2978,6 @@ static PyMemberDef pjmedia_snd_dev_info_members[] =
 static PyTypeObject PyTyp_pjmedia_snd_dev_info =
 {
     PyObject_HEAD_INIT(NULL)
-    0,                              /*ob_size*/
     "_pjsua.PJMedia_Snd_Dev_Info",  /*tp_name*/
     sizeof(PyObj_pjmedia_snd_dev_info),  /*tp_basicsize*/
     0,                              /*tp_itemsize*/
@@ -3101,7 +3086,6 @@ static PyMemberDef pjmedia_codec_param_info_members[] =
 static PyTypeObject PyTyp_pjmedia_codec_param_info =
 {
     PyObject_HEAD_INIT(NULL)
-    0,                              /*ob_size*/
     "_pjsua.PJMedia_Codec_Param_Info",      /*tp_name*/
     sizeof(PyObj_pjmedia_codec_param_info),  /*tp_basicsize*/
     0,                              /*tp_itemsize*/
@@ -3210,7 +3194,6 @@ static PyMemberDef pjmedia_codec_param_setting_members[] =
 static PyTypeObject PyTyp_pjmedia_codec_param_setting =
 {
     PyObject_HEAD_INIT(NULL)
-    0,                              /*ob_size*/
     "_pjsua.PJMedia_Codec_Param_Setting",/*tp_name*/
     sizeof(PyObj_pjmedia_codec_param_setting),  /*tp_basicsize*/
     0,                              /*tp_itemsize*/
@@ -3266,7 +3249,7 @@ static void pjmedia_codec_param_dealloc(PyObj_pjmedia_codec_param* self)
 {
     Py_XDECREF(self->info);        
     Py_XDECREF(self->setting);        
-    self->ob_type->tp_free((PyObject*)self);
+    Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
 /*
@@ -3328,7 +3311,6 @@ static PyMemberDef pjmedia_codec_param_members[] =
 static PyTypeObject PyTyp_pjmedia_codec_param =
 {
     PyObject_HEAD_INIT(NULL)
-    0,                              /*ob_size*/
     "_pjsua.PJMedia_Codec_Param",   /*tp_name*/
     sizeof(PyObj_pjmedia_codec_param),/*tp_basicsize*/
     0,                              /*tp_itemsize*/
@@ -3414,7 +3396,7 @@ static void call_info_dealloc(PyObj_pjsua_call_info* self)
     Py_XDECREF(self->call_id);
     Py_XDECREF(self->state_text);
     Py_XDECREF(self->last_status_text);
-    self->ob_type->tp_free((PyObject*)self);
+    Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
 
@@ -3432,13 +3414,13 @@ static PyObject * call_info_new(PyTypeObject *type, PyObject *args,
 
     self = (PyObj_pjsua_call_info *)type->tp_alloc(type, 0);
     if (self != NULL) {
-        self->local_info = PyString_FromString("");
-	self->local_contact = PyString_FromString("");
-	self->remote_info = PyString_FromString("");
-	self->remote_contact = PyString_FromString("");
-	self->call_id = PyString_FromString("");
-	self->state_text = PyString_FromString("");
-	self->last_status_text = PyString_FromString("");
+        self->local_info = PyBytes_FromString("");
+	self->local_contact = PyBytes_FromString("");
+	self->remote_info = PyBytes_FromString("");
+	self->remote_contact = PyBytes_FromString("");
+	self->call_id = PyBytes_FromString("");
+	self->state_text = PyBytes_FromString("");
+	self->last_status_text = PyBytes_FromString("");
     }
     return (PyObject *)self;
 }
@@ -3546,7 +3528,6 @@ static PyMemberDef call_info_members[] =
 static PyTypeObject PyTyp_pjsua_call_info =
 {
     PyObject_HEAD_INIT(NULL)
-    0,                              /*ob_size*/
     "_pjsua.Call_Info",		    /*tp_name*/
     sizeof(PyObj_pjsua_call_info),  /*tp_basicsize*/
     0,                              /*tp_itemsize*/
@@ -3611,16 +3592,16 @@ static void PyObj_pjsip_rx_data_delete(PyObj_pjsip_rx_data* self)
     Py_XDECREF(self->msg_info_buffer);
     Py_XDECREF(self->msg_info_info);
 
-    self->ob_type->tp_free((PyObject*)self);
+    Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
 
 static void PyObj_pjsip_rx_data_import(PyObj_pjsip_rx_data *obj, pjsip_rx_data *rx_data)
 {
     Py_XDECREF(obj->msg_info_buffer);
-    obj->msg_info_buffer = PyString_FromString(rx_data->msg_info.msg_buf);
+    obj->msg_info_buffer = PyBytes_FromString(rx_data->msg_info.msg_buf);
     Py_XDECREF(obj->msg_info_info);
-    obj->msg_info_info = PyString_FromString(pjsip_rx_data_get_info(rx_data));
+    obj->msg_info_info = PyBytes_FromString(pjsip_rx_data_get_info(rx_data));
 }
 
 
@@ -3637,8 +3618,8 @@ static PyObject * PyObj_pjsip_rx_data_new(PyTypeObject *type, PyObject *args, Py
 
     self = (PyObj_pjsip_rx_data *)type->tp_alloc(type, 0);
     if (self != NULL) {
-        self->msg_info_buffer = PyString_FromString("");
-        self->msg_info_info   = PyString_FromString("");
+        self->msg_info_buffer = PyBytes_FromString("");
+        self->msg_info_info   = PyBytes_FromString("");
     }
 
     return (PyObject *)self;
@@ -3671,7 +3652,6 @@ static PyMemberDef PyObj_pjsip_rx_data_members[] =
 static PyTypeObject PyTyp_pjsip_rx_data =
 {
     PyObject_HEAD_INIT(NULL)
-    0,                              /*ob_size*/
     "_pjsua.Pjsip_Rx_Data",			/*tp_name*/
     sizeof(PyObj_pjsip_rx_data),  /*tp_basicsize*/
     0,                              /*tp_itemsize*/

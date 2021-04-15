@@ -57,12 +57,12 @@ tutorial. The paragraphs below explain basic tasks on using this module.
 
 """
 import _pjsua
-import thread
+import _thread
 import threading
 import weakref
 import time
 
-class Error:
+class Error(BaseException):
     """Error exception class.
     
     Member documentation:
@@ -92,7 +92,7 @@ class Error:
 
     def __str__(self):
         return "Object: " + str(self.obj) + ", operation=" + self.op_name + \
-               ", error=" + self.err_msg()
+               ", error=" + str(self.err_msg())
 
 # 
 # Constants
@@ -1491,6 +1491,37 @@ class CallCallback:
         pass
 
 
+class AudioCallback:
+    """Class to receive event notification from Call objects.
+    Use lib.create_audio_cb() method to install instance of this callback
+    class to receive/send audio frames from/to the media/call slots object.
+    """
+
+    def __init__(self):
+        pass
+
+    def __del__(self):
+        pass
+
+    def cb_put_frame(self, frame):
+        """
+        Notification that the slot has new audio frame.
+        Return:
+        The callback should return integer, value doesn't matter
+        """
+        pass
+
+    def cb_get_frame(self, size):
+        """
+        Notification that the slot requests audio frames of size
+        for playback to slot.
+        Return:
+        The callback should either return bytes contains frames of size
+        if available or return None
+        """
+        pass
+
+
 class CallInfo:
     """This structure contains various information about Call.
 
@@ -2244,7 +2275,7 @@ class Lib:
         self._err_check("start()", self, err)
         self._has_thread = with_thread
         if self._has_thread:
-            thread.start_new(_worker_thread_main, (0,))
+            _thread.start_new(_worker_thread_main, (0,))
 
     def handle_events(self, timeout=50):
         """Poll the events from underlying pjsua library.
@@ -2711,6 +2742,44 @@ class Lib:
         err = _pjsua.recorder_destroy(rec_id)
         self._err_check("recorder_destroy()", self, err)
 
+    def create_audio_cb(self, callback):
+        """Create audio callback.
+        Keyword arguments
+        callback    -- An object with one or both of methods:
+                       string cb_get_frame(int) should return a string
+                           containing audio data of specified length
+                       int cb_get_frame(string) should process the string
+                           containing audio data. Return code does not matter.
+        Return:
+            Audio callback ID
+        """
+        lck = self.auto_lock()
+        err, acb_id = _pjsua.audio_cb_create(callback)
+        self._err_check("create_audio_cb()", self, err)
+        return acb_id
+
+    def audio_cb_get_slot(self, acb_id):
+        """Get the conference port ID for the specified audio callback.
+        Keyword arguments:
+        acb_id  -- the audio callback ID
+        Return:
+            Conference slot number for the audio callback
+        """
+        lck = self.auto_lock()
+        slot = _pjsua.audio_cb_get_conf_port(acb_id)
+        if slot < 1:
+            self._err_check("audio_cb_get_slot()", self, -1,
+                            "Invalid audio callback id")
+        return slot
+
+    def audio_cb_destroy(self, acb_id):
+        """Destroy the audio callback.
+        Keyword arguments:
+        acb_id   -- the audio callback ID.
+        """
+        lck = self.auto_lock()
+        err = _pjsua.audio_cb_destroy(acb_id)
+        self._err_check("audio_cb_destroy()", self, err)
 
     # Internal functions
 
@@ -2956,8 +3025,8 @@ def _worker_thread_main(arg):
 def _Trace(args):
     global enable_trace
     if enable_trace:
-        print "** ",
+        print("** ", end=" "),
         for arg in args:
-            print arg,
-        print " **"
+            print(arg, end=" ")
+        print(" **")
 
