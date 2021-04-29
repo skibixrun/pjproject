@@ -75,7 +75,7 @@ export PJMEDIA_OBJS += $(OS_OBJS) $(M_OBJS) $(CC_OBJS) $(HOST_OBJS) \
 			types.o vid_codec.o vid_codec_util.o \
 			vid_port.o vid_stream.o vid_stream_info.o vid_conf.o \
 			wav_player.o wav_playlist.o wav_writer.o wave.o \
-			wsola.o audiodev.o videodev.o
+			wsola.o audiodev.o videodev.o cb_port.o
 
 export PJMEDIA_CFLAGS += $(_CFLAGS)
 export PJMEDIA_CXXFLAGS += $(_CXXFLAGS)
